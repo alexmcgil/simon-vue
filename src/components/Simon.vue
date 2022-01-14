@@ -75,6 +75,8 @@ export default {
         } else if (this.playerSteps[this.step] == this.simonsSteps[this.step]) {
           this.step += 1
         } else {                // Else game is over 😞
+          this.playerSteps = []
+          this.simonsSteps = []
           this.block = false
           if (this.isGame) {    // Checking for clicks without playing
             this.lose = true
@@ -186,6 +188,7 @@ export default {
     },
 
     startGame() {
+      this.lose = false
       this.block = true     // Blocking the game start button
       this.step = 0         // Zeroing counters
       this.playerSteps = []
@@ -208,7 +211,7 @@ export default {
         setTimeout(function () {
           return function () {
 
-            that.action(steps[currentIndex])
+              that.action(steps[currentIndex])
 
           };
         }(currentIndex), that.getDifficulty() * (currentIndex));
