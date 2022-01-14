@@ -93,3 +93,7 @@ ul, li {
 .info button:hover {
     background: #78BCFF;
 }
+
+.blink {
+    opacity: 0.1;
+}
