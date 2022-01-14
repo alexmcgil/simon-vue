@@ -2,7 +2,7 @@
   <div class="wrapper">
     <div class="game">
       <div class="simon">
-        <ul v-on:click="action">
+        <ul v-on:click="actions">
           <li class="tile red"></li>
           <li class="tile blue"></li>
           <li class="tile yellow"></li>
@@ -12,7 +12,7 @@
     </div>
     <div class="descriptions">
       <div class="info">
-        <button v-on:click="startGame" :disabled="block">Играть!</button>
+        <button v-on:click="startGame" :disabled="isGame">Играть!</button>
         <p v-if="lose">Вы проиграли :(</p>
       </div>
       <div class="difficulty">
@@ -37,7 +37,6 @@ export default {
       simonsSteps: [],
       lose: false,
       isGame: false,
-      block: false,
       step: 0,
     }
   },
@@ -55,38 +54,50 @@ export default {
       }
     },
 
-    action(e) {
-      if (this.isPlayer(e)) {   // If the action is performed by a player, the first condition checks it.
+    game() {
+
+      let agreeStep = this.playerSteps[this.step] == this.simonsSteps[this.step]
+      let agreeLength = this.step == this.simonsSteps.length - 1
+
+      if (agreeStep) { // If the player repeats Simon's moves, then everything is OK 👌
+        this.step += 1
+      }
+      if (agreeLength && agreeStep) { // If the player repeated Simon's moves
+        this.playerSteps = []         // with his own moves, then his sequence
+        this.step = 0                 // is cleared, and Simon randomly chooses his next move
+        let that = this
+
+        setTimeout(function () {
+          return function () {
+            that.Simon()
+          };
+        }(), 1000);
+
+      }
+      if (!agreeStep) {     // Game is over 😞
+
+        this.playerSteps = []
+        this.simonsSteps = []
+        this.isGame = false
+        this.lose = true
+      }
+    },
+
+    actions(e) {
+      if (!this.isGame) {  // If the game has not started, then no actions
+        return 0
+      }
+      if (this.isPlayer(e)) {
         this.playSound(e.target.className)
         this.blink(e)
         this.playerSteps.push(e.target.className)
-        if (this.step == this.simonsSteps.length - 1) { // If the player repeated Simon's moves
-          this.playerSteps = []                         // with his own moves, then his sequence
-          this.step = 0                                 // is cleared, and Simon randomly chooses his next move
-          let that = this
+        this.game(e)
 
-          setTimeout(function () {
-            return function () {
-              that.Simon()
-            };
-          }(), 1000);
-
-          // If the player repeats Simon's moves, then everything is OK 👌
-        } else if (this.playerSteps[this.step] == this.simonsSteps[this.step]) {
-          this.step += 1
-        } else {                // Else game is over 😞
-          this.playerSteps = []
-          this.simonsSteps = []
-          this.block = false
-          if (this.isGame) {    // Checking for clicks without playing
-            this.lose = true
-          }
-        }
       } else {
-            // Else Simon gets all the tiles
+
         let tiles = document.querySelectorAll("li")
         switch (e) {
-                              // Checks which tile matches his new random move
+            // Checks which tile matches his new random move
           case "tile red":
             this.blink(tiles[0]); // And plays an animation with sound
             this.playSound(e)
@@ -135,21 +146,23 @@ export default {
       let soundThree = new Audio(require("./../../sounds/3.mp3"))
       let soundFour = new Audio(require("./../../sounds/4.mp3"))
 
-      switch (step) {
+      let sounds = [soundOne, soundTwo, soundThree, soundFour]
+
+      switch (step) {     // Simple parser for sound's map
         case "tile red":
-          soundOne.play()
+          sounds[0].play()
           break;
 
         case "tile blue":
-          soundTwo.play()
+          sounds[3].play()
           break;
 
         case "tile yellow":
-          soundThree.play()
+          sounds[2].play()
           break;
 
         case "tile green":
-          soundFour.play()
+          sounds[3].play()
           break;
 
       }
@@ -168,6 +181,7 @@ export default {
       } else {
         area = stepOrEvent
       }
+
       area.style.opacity = "1"
       setTimeout(function () {
         return function () {
@@ -188,17 +202,15 @@ export default {
     },
 
     startGame() {
-      this.lose = false
-      this.block = true     // Blocking the game start button
+      this.isGame = true
+      this.lose = false    // Blocking the game start button
       this.step = 0         // Zeroing counters
       this.playerSteps = []
       this.simonsSteps = []
-      this.isGame = true    // Checking whether the game is in progress so as not
-                            // to issue a loss message when the player
-                            // simply clicks on the playing field
 
       this.Simon()          // Initializing the game, Simon makes the first move
     },
+
     Simon() {
 
       let that = this;
@@ -211,7 +223,7 @@ export default {
         setTimeout(function () {
           return function () {
 
-              that.action(steps[currentIndex])
+            that.actions(steps[currentIndex])
 
           };
         }(currentIndex), that.getDifficulty() * (currentIndex));
